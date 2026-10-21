@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Credit Risk Studio</title>
+  <style>
+    :root { --ink:#172033; --muted:#667085; --line:#e5e7eb; --paper:#f7f8fb;
+      --navy:#182b49; --teal:#0f9d8a; --red:#d94f5c; --green:#138a72; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font:14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; }
+    .shell { display:grid; grid-template-columns:220px 1fr; min-height:100vh; height:100vh; overflow:hidden; }
+    aside { color:#d9e4f4; background:var(--navy); padding:22px 18px; }
+    .brand { display:flex; align-items:center; gap:11px; color:white; font-size:18px; font-weight:750; letter-spacing:-.02em; }
+    .mark { display:grid; place-items:center; width:32px; height:32px; color:var(--navy); background:#74e1cc; border-radius:10px; font-weight:900; }
+    .eyebrow { margin:30px 0 7px; color:#8fa5c4; font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+    aside p { color:#aebed3; font-size:12px; }
+    .side-note { position:absolute; bottom:24px; width:205px; color:#90a5c0; font-size:11px; }
+    main { max-width:1320px; width:100%; height:100vh; padding:22px 3.5vw; }
+    header { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; margin-bottom:14px; }
+    h1 { margin:0 0 3px; color:var(--navy); font-size:26px; letter-spacing:-.04em; }
+    .subtitle { margin:0; color:var(--muted); }
+    .status { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12px; }
+    .dot { width:9px; height:9px; background:var(--teal); border-radius:50%; box-shadow:0 0 0 4px #d9f5ef; }
+    .grid { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(280px,.65fr); gap:16px; height:calc(100vh - 92px); }
+    .card { background:white; border:1px solid var(--line); border-radius:16px; box-shadow:0 5px 20px #1720330a; padding:17px; }
+    .card h2 { margin:0 0 2px; color:var(--navy); font-size:16px; }
+    .card-intro { margin:0 0 11px; color:var(--muted); font-size:11px; }
+    .form-card { overflow:hidden; }
+    .section { margin:12px 0 6px; color:#8791a3; font-size:9px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+    .fields { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px 10px; }
+    label { color:#414b5f; font-size:10px; font-weight:650; }
+    input, select { display:block; width:100%; height:31px; margin-top:3px; padding:5px 7px; color:var(--ink); background:#fbfcfe; border:1px solid #dce1e9; border-radius:7px; font:11px inherit; }
+    input:focus, select:focus { outline:3px solid #d7f4ee; border-color:var(--teal); }
+    .actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+    button { cursor:pointer; border:0; border-radius:8px; padding:9px 13px; color:white; background:var(--navy); font:700 12px inherit; }
+    button.secondary { color:var(--navy); background:#edf1f6; }
+    button:disabled { cursor:wait; opacity:.65; }
+    .result { min-height:250px; display:flex; flex-direction:column; justify-content:center; position:relative; }
+    .result-header { position:absolute; top:16px; left:17px; right:17px; display:flex; justify-content:space-between; align-items:center; }
+    .result-actions { display:flex; gap:6px; }
+    .result-actions button { padding:6px 9px; font-size:10px; }
+    .placeholder { color:var(--muted); text-align:center; }
+    .result-ready { display:none; }
+    .result-label { color:var(--muted); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
+    .probability { margin:8px 0 2px; color:var(--navy); font-size:52px; font-weight:800; letter-spacing:-.06em; }
+    .decision { display:inline-block; width:max-content; padding:5px 9px; color:#096b59; background:#ddf7f0; border-radius:99px; font-size:12px; font-weight:800; }
+    .decision.risk { color:#a13a45; background:#fde6e8; }
+    .meter { height:9px; margin:24px 0 9px; overflow:hidden; background:#e9edf2; border-radius:20px; }
+    .meter-fill { width:0; height:100%; background:linear-gradient(90deg,var(--teal),#f0b44c,var(--red)); transition:width .5s ease; }
+    .meter-labels { display:flex; justify-content:space-between; color:var(--muted); font-size:11px; }
+    .detail { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }
+    .detail span { display:block; color:var(--muted); font-size:11px; } .detail strong { color:var(--navy); font-size:13px; }
+    .info { margin-top:14px; padding:11px; color:#586477; background:#f5f7fa; border-radius:9px; font-size:10px; }
+    .error { display:none; margin-top:14px; padding:10px 12px; color:#9d3542; background:#fff0f1; border-radius:9px; font-size:12px; }
+    @media(max-width:1100px) { .fields { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media(max-width:850px) { .shell { display:block; height:auto; min-height:100vh; overflow:visible; } aside { padding:18px 20px; } .eyebrow,.side-note { display:none; } main { height:auto; padding:25px 18px 45px; } .grid { height:auto; grid-template-columns:1fr; } header { display:block; } .status { margin-top:14px; } }
+    @media(max-width:500px) { .fields { grid-template-columns:1fr 1fr; } .card { padding:15px; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="brand"><span class="mark">↗</span> Credit Risk Studio</div>
+      <div class="eyebrow">Decision workspace</div>
+      <p>Explore how a classical ML risk model turns an application profile into a calibrated risk signal.</p>
+      <div class="eyebrow">Model stack</div>
+      <p>Logistic baseline<br>Random forest bagging<br>Gradient boosting<br>Stacking ensemble</p>
+      <div class="side-note">Educational demonstration · Not a lending decision system</div>
+    </aside>
+    <main>
+      <header>
+        <div><h1>Application risk assessment</h1><p class="subtitle">Run a single application through the registered production model.</p></div>
+        <div class="status"><span class="dot"></span><span id="status">Checking API status…</span></div>
+      </header>
+      <div class="grid">
+        <section class="card">
+          <h2>Applicant profile</h2>
+          <p class="card-intro">Use the sample profile or enter values from the UCI German Credit schema.</p>
+          <form id="application-form">
+            <div class="section">Credit profile</div>
+            <div class="fields">
+              <label>Checking account<select name="checking_status"><option value="A11">A11 · low balance</option><option value="A12">A12 · medium balance</option><option value="A13">A13 · high balance</option><option value="A14">A14 · no account</option></select></label>
+              <label>Credit history<select name="credit_history"><option value="A34">A34 · critical/other</option><option value="A32">A32 · existing paid</option><option value="A31">A31 · all paid</option><option value="A33">A33 · delayed</option></select></label>
+              <label>Purpose<select name="purpose"><option value="A43">A43 · radio/TV</option><option value="A40">A40 · new car</option><option value="A41">A41 · used car</option><option value="A49">A49 · business</option></select></label>
+              <label>Savings status<select name="savings_status"><option value="A65">A65 · unknown/no savings</option><option value="A61">A61 · under 100</option><option value="A62">A62 · 100–500</option><option value="A63">A63 · 500–1000</option></select></label>
+              <label>Credit amount<input name="credit_amount" type="number" min="1" value="1169" required></label>
+              <label>Duration (months)<input name="duration_months" type="number" min="1" value="6" required></label>
+              <label>Installment rate<select name="installment_rate"><option>4</option><option>3</option><option>2</option><option>1</option></select></label>
+              <label>Existing credits<input name="existing_credits" type="number" min="1" value="2" required></label>
+            </div>
+            <div class="section">Household & employment</div>
+            <div class="fields">
+              <label>Age<input name="age" type="number" min="18" max="100" value="67" required></label>
+              <label>Dependents<input name="dependents" type="number" min="1" value="1" required></label>
+              <label>Employment<select name="employment_since"><option value="A75">A75 · 7+ years</option><option value="A74">A74 · 4–7 years</option><option value="A73">A73 · 1–4 years</option><option value="A72">A72 · under 1 year</option></select></label>
+              <label>Job<select name="job"><option value="A173">A173 · skilled employee</option><option value="A172">A172 · skilled official</option><option value="A171">A171 · unskilled resident</option></select></label>
+              <label>Housing<select name="housing"><option value="A152">A152 · own</option><option value="A151">A151 · rent</option><option value="A153">A153 · free</option></select></label>
+              <label>Residence since<select name="residence_since"><option>4</option><option>3</option><option>2</option><option>1</option></select></label>
+              <label>Personal status<select name="personal_status_sex"><option value="A93">A93 · single male</option><option value="A92">A92 · divorced/separated male</option><option value="A95">A95 · female</option></select></label>
+              <label>Property<select name="property"><option value="A121">A121 · real estate</option><option value="A122">A122 · savings/life insurance</option><option value="A123">A123 · car/other</option></select></label>
+            </div>
+            <div class="section">Other obligations</div>
+            <div class="fields">
+              <label>Other debtors<select name="other_debtors"><option value="A101">A101 · none</option><option value="A102">A102 · co-applicant</option><option value="A103">A103 · guarantor</option></select></label>
+              <label>Other installment plans<select name="other_installment_plans"><option value="A143">A143 · none</option><option value="A141">A141 · bank</option><option value="A142">A142 · stores</option></select></label>
+              <label>Telephone<select name="telephone"><option value="A192">A192 · none</option><option value="A191">A191 · registered</option></select></label>
+              <label>Foreign worker<select name="foreign_worker"><option value="A201">A201 · yes</option><option value="A202">A202 · no</option></select></label>
+            </div>
+            <div class="actions"><button type="submit" id="assess">Assess application</button><button type="button" class="secondary" id="demo">Load sample</button><button type="button" class="secondary" id="clear-inputs">Clear inputs</button></div>
+            <div class="error" id="error"></div>
+          </form>
+        </section>
+        <section class="card result">
+          <div class="result-header"><h2>Assessment result</h2><div class="result-actions"><button type="button" class="secondary" id="refresh-result">Refresh</button><button type="button" class="secondary" id="clear-result">Clear</button></div></div>
+          <div id="placeholder" class="placeholder"><div style="font-size:36px">◎</div><p>Your assessment will appear here.</p></div>
+          <div id="result-ready" class="result-ready">
+            <div class="result-label">Bad-credit probability</div>
+            <div class="probability" id="probability">—</div>
+            <div class="decision" id="decision">—</div>
+            <div class="meter"><div class="meter-fill" id="meter-fill"></div></div>
+            <div class="meter-labels"><span>Lower risk</span><span>Higher risk</span></div>
+            <div class="detail"><div><span>Model run</span><strong id="run-id">—</strong></div><div><span>Action band</span><strong id="action">—</strong></div></div>
+            <div class="info">This is a model signal, not an automatic lending decision. Review the model card, threshold, data quality, and applicable fairness obligations before acting.</div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    const form = document.querySelector("#application-form");
+    const fields = ["checking_status","credit_history","purpose","credit_amount","savings_status","employment_since","duration_months","installment_rate","personal_status_sex","other_debtors","residence_since","property","age","other_installment_plans","housing","existing_credits","job","dependents","telephone","foreign_worker"];
+    const sample = {checking_status:"A11",duration_months:6,credit_history:"A34",purpose:"A43",credit_amount:1169,savings_status:"A65",employment_since:"A75",installment_rate:4,personal_status_sex:"A93",other_debtors:"A101",residence_since:4,property:"A121",age:67,other_installment_plans:"A143",housing:"A152",existing_credits:2,job:"A173",dependents:1,telephone:"A192",foreign_worker:"A201"};
+    function setValues(values) { fields.forEach(name => { if (form.elements[name]) form.elements[name].value = values[name]; }); }
+    function clearResult() {
+      document.querySelector("#placeholder").style.display = "block";
+      document.querySelector("#result-ready").style.display = "none";
+      document.querySelector("#error").style.display = "none";
+    }
+    function clearInputs() {
+      form.querySelectorAll("input").forEach(input => input.value = "");
+      form.querySelectorAll("select").forEach(select => select.selectedIndex = -1);
+      clearResult();
+    }
+    document.querySelector("#demo").onclick = () => setValues(sample);
+    document.querySelector("#clear-inputs").onclick = clearInputs;
+    document.querySelector("#clear-result").onclick = clearResult;
+    document.querySelector("#refresh-result").onclick = () => form.requestSubmit();
+    fetch("/health").then(r => r.ok ? document.querySelector("#status").textContent = "API online" : Promise.reject()).catch(() => document.querySelector("#status").textContent = "API unavailable");
+    form.onsubmit = async event => {
+      event.preventDefault();
+      const button = document.querySelector("#assess"), error = document.querySelector("#error");
+      button.disabled = true; button.textContent = "Assessing…"; error.style.display = "none";
+      const data = Object.fromEntries(new FormData(form)); ["duration_months","credit_amount","installment_rate","residence_since","age","existing_credits","dependents"].forEach(k => data[k] = Number(data[k]));
+      try {
+        const response = await fetch("/predict", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data)});
+        const result = await response.json(); if (!response.ok) throw new Error(result.detail || "Prediction failed");
+        const percent = result.bad_credit_probability * 100;
+        document.querySelector("#placeholder").style.display = "none"; document.querySelector("#result-ready").style.display = "block";
+        document.querySelector("#probability").textContent = percent.toFixed(1) + "%";
+        document.querySelector("#meter-fill").style.width = Math.max(2, percent) + "%";
+        document.querySelector("#decision").textContent = result.decision.replaceAll("_", " ");
+        document.querySelector("#decision").classList.toggle("risk", result.decision.includes("decline"));
+        document.querySelector("#run-id").textContent = result.model_run_id;
+        document.querySelector("#action").textContent = result.decision.includes("decline") ? "Review / decline" : "Approve / review";
+      } catch (err) { error.textContent = err.message; error.style.display = "block"; }
+      finally { button.disabled = false; button.textContent = "Assess application"; }
+    };
+  </script>
+</body>
+</html>

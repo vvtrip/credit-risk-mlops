@@ -1,0 +1,66 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: credit-risk-api:local
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      CREDIT_RISK_ARTIFACT_DIR: /app/artifacts
+    volumes:
+      - ./artifacts:/app/artifacts:ro
+    depends_on:
+      mlflow:
+        condition: service_started
+    restart: unless-stopped
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: credit-risk-api:local
+    command:
+      - mlflow
+      - server
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+      - --backend-store-uri
+      - sqlite:////app/mlflow.db
+      - --default-artifact-root
+      - /app/mlruns
+    ports:
+      - "${MLFLOW_PORT:-5000}:5000"
+    environment:
+      MLFLOW_TRACKING_URI: sqlite:////app/mlflow.db
+    volumes:
+      - ./mlflow.db:/app/mlflow.db
+      - ./mlruns:/app/mlruns
+    restart: unless-stopped
+
+  trainer:
+    image: credit-risk-api:local
+    profiles: ["training"]
+    command:
+      - python
+      - -m
+      - credit_risk
+      - train
+      - --config
+      - configs/default.yaml
+      - --output-dir
+      - artifacts
+      - --data-dir
+      - data/raw
+    environment:
+      CREDIT_RISK_ARTIFACT_DIR: /app/artifacts
+      CREDIT_RISK_DATA_DIR: /app/data/raw
+      CREDIT_RISK_REFERENCE_PATH: /app/data/reference.csv
+      MLFLOW_TRACKING_URI: sqlite:////app/mlflow.db
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./data:/app/data
+      - ./mlflow.db:/app/mlflow.db
+      - ./mlruns:/app/mlruns
