@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import ssl
 import urllib.request
 from pathlib import Path
@@ -24,12 +25,15 @@ RAW_COLUMNS = [
     "job", "dependents", "telephone", "foreign_worker", "target",
 ]
 
+logger = logging.getLogger(__name__)
+
 
 def load_dataset(data_dir: Path, dataset_url: str | None = None) -> tuple[pd.DataFrame, dict[str, Any]]:
     dataset_url = dataset_url or load_runtime_settings().dataset_url
     data_dir.mkdir(parents=True, exist_ok=True)
     archive = data_dir / "german.data"
     if not archive.exists():
+        logger.info("Dataset not found; downloading from %s", dataset_url)
         zip_path = data_dir / "german.zip"
         context = ssl.create_default_context(cafile=certifi.where())
         with urllib.request.urlopen(dataset_url, context=context) as response:
@@ -38,6 +42,9 @@ def load_dataset(data_dir: Path, dataset_url: str | None = None) -> tuple[pd.Dat
         with zipfile.ZipFile(zip_path) as zipped:
             member = next(name for name in zipped.namelist() if name.endswith("german.data"))
             archive.write_bytes(zipped.read(member))
+        logger.info("Downloaded dataset to %s", archive)
+    else:
+        logger.info("Using cached dataset: %s", archive)
     frame = pd.read_csv(archive, sep=r"\s+", header=None, names=RAW_COLUMNS)
     frame["target"] = frame["target"].map({1: 0, 2: 1}).astype("int8")
     metadata = {
@@ -49,6 +56,7 @@ def load_dataset(data_dir: Path, dataset_url: str | None = None) -> tuple[pd.Dat
     }
     (data_dir / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     validate_dataset(frame)
+    logger.info("Validated dataset: rows=%d", len(frame))
     return frame, metadata
 
 

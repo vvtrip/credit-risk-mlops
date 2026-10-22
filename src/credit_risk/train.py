@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -17,6 +18,8 @@ from .evaluate import (
 )
 from .models import build_models
 
+logger = logging.getLogger(__name__)
+
 
 def train(
     settings: Settings,
@@ -25,15 +28,20 @@ def train(
     runtime: RuntimeSettings | None = None,
 ) -> Path:
     runtime = runtime or load_runtime_settings()
+    logger.info("Starting training: data_dir=%s output_dir=%s", data_dir, output_dir)
     frame, metadata = load_dataset(data_dir, runtime.dataset_url)
+    logger.info("Loaded dataset: rows=%d columns=%d", len(frame), len(frame.columns))
     x_train, x_test, y_train, y_test = split_data(frame, settings)
+    logger.info("Created split: train_rows=%d test_rows=%d", len(x_train), len(x_test))
     runtime.reference_path.parent.mkdir(parents=True, exist_ok=True)
     x_train.to_csv(runtime.reference_path, index=False)
     models = build_models(x_train, settings.random_state)
+    logger.info("Prepared model comparison: models=%s", ", ".join(models))
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_dir = output_dir / run_id
     run_dir.mkdir(parents=True, exist_ok=False)
     tracking_uri = runtime.mlflow_tracking_uri or f"sqlite:///{(output_dir.parent / 'mlflow.db').resolve().as_posix()}"
+    logger.info("Using MLflow tracking URI: %s", tracking_uri)
     mlflow.set_tracking_uri(tracking_uri)
     mlflow.set_experiment("credit-risk-training")
     results = {}
@@ -48,6 +56,7 @@ def train(
         })
         mlflow.log_dict(metadata, "dataset_metadata.json")
         for name, model in models.items():
+            logger.info("Training model: %s", name)
             with mlflow.start_run(run_name=name, nested=True, tags={"model_family": name}):
                 cv_metrics = cross_validated_metrics(model, x_train, y_train, settings.cv_folds, settings.random_state)
                 model.fit(x_train, y_train)
@@ -55,12 +64,20 @@ def train(
                 threshold = choose_threshold(y_test, probabilities, settings.false_negative_cost, settings.false_positive_cost)
                 test_metrics = classification_metrics(y_test, probabilities, threshold)
                 results[name] = {"cv": cv_metrics, "test": test_metrics, "threshold": threshold}
+                logger.info(
+                    "Completed model %s: pr_auc=%.4f roc_auc=%.4f threshold=%.4f",
+                    name,
+                    test_metrics["pr_auc"],
+                    test_metrics["roc_auc"],
+                    threshold,
+                )
                 mlflow.log_param("decision_threshold", threshold)
                 mlflow.log_metrics(_flat_metrics("cv", cv_metrics) | _flat_metrics("test", test_metrics))
                 model_path = run_dir / f"{name}.joblib"
                 joblib.dump(model, model_path)
                 mlflow.log_artifact(str(model_path), artifact_path="models")
     winner = max(results, key=lambda name: results[name]["test"]["pr_auc"])
+    logger.info("Selected winner: %s (pr_auc=%.4f)", winner, results[winner]["test"]["pr_auc"])
     winner_model = joblib.load(run_dir / f"{winner}.joblib")
     winner_threshold = results[winner]["threshold"]
     write_json(run_dir / "metrics.json", {"models": results, "winner": winner})
@@ -105,6 +122,12 @@ def train(
         "mlflow_alias": runtime.mlflow_model_alias,
         "mlflow_version": registered_version,
     })
+    logger.info(
+        "Training complete: run_id=%s artifact_dir=%s registered_version=%s",
+        run_id,
+        run_dir,
+        registered_version,
+    )
     return run_dir
 
 

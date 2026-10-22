@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -7,6 +8,8 @@ from pydantic import BaseModel, Field
 
 from .config import load_runtime_settings
 from .predict import predict_records
+
+logger = logging.getLogger(__name__)
 
 
 class Application(BaseModel):
@@ -62,4 +65,5 @@ def predict(application: Application) -> dict[str, Any]:
     try:
         return predict_records([application.model_dump()], load_runtime_settings().artifact_dir)[0]
     except FileNotFoundError as exc:
+        logger.error("Prediction unavailable: production model is missing")
         raise HTTPException(status_code=503, detail="No production model is registered") from exc

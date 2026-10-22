@@ -1,7 +1,10 @@
+import logging
 from typing import Any
 
 import numpy as np
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 def population_stability_index(reference: pd.Series, current: pd.Series, bins: int = 10) -> float:
@@ -16,6 +19,11 @@ def population_stability_index(reference: pd.Series, current: pd.Series, bins: i
 
 
 def drift_report(reference: pd.DataFrame, current: pd.DataFrame, psi_threshold: float = 0.2) -> dict[str, Any]:
+    logger.info(
+        "Starting drift report: reference_rows=%d current_rows=%d",
+        len(reference),
+        len(current),
+    )
     report = {}
     for column in reference.columns.intersection(current.columns):
         if pd.api.types.is_numeric_dtype(reference[column]):
@@ -30,4 +38,7 @@ def drift_report(reference: pd.DataFrame, current: pd.DataFrame, psi_threshold: 
             midpoint = (p + q) / 2
             js = float(0.5 * np.sum(p * np.log(p / midpoint)) + 0.5 * np.sum(q * np.log(q / midpoint)))
             report[column] = {"metric": "js_divergence", "value": js, "drifted": js >= 0.1}
+    logger.info("Completed drift report: columns=%d drifted=%d", len(report), sum(
+        item["drifted"] for item in report.values()
+    ))
     return report

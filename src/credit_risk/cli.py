@@ -2,13 +2,14 @@ import argparse
 import json
 from pathlib import Path
 
-from .config import load_runtime_settings, load_settings
+from .config import configure_logging, load_runtime_settings, load_settings
 from .monitor import drift_report
 from .predict import predict_records
 from .train import train
 
 
 def main() -> None:
+    configure_logging()
     parser = argparse.ArgumentParser(description="Credit-risk ML lifecycle CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
     training = subparsers.add_parser("train")

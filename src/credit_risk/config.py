@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -9,6 +10,18 @@ from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT / ".env")
+
+
+def configure_logging() -> None:
+    """Configure consistent console logging for CLI and module entry points."""
+    level_name = os.getenv("CREDIT_RISK_LOG_LEVEL", "INFO").upper()
+    level = getattr(logging, level_name, None)
+    if not isinstance(level, int):
+        raise TypeError(f"Invalid CREDIT_RISK_LOG_LEVEL: {level_name}")
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s %(levelname)s %(name)s - %(message)s",
+    )
 
 
 @dataclass(frozen=True)
