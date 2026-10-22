@@ -25,7 +25,7 @@ python -m pip install -e ".[dev]"
 python -m credit_risk train
 python -m credit_risk predict --input examples/request.json
 python -m credit_risk monitor --input examples/monitor.csv
-uvicorn credit_risk.api:app --reload
+python -m uvicorn --app-dir src credit_risk.api:app --reload
 ```
 
 The first training run downloads the dataset into `data/raw/`. Data and generated models are ignored by git.
