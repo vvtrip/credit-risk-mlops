@@ -37,6 +37,7 @@ python -m credit_risk monitor --input examples/monitor.csv
 ```
 
 Runtime defaults are centralized in [config.py](C:/Users/Vaibhav/Downloads/credit-risk-mlops/src/credit_risk/config.py). Copy `.env.example` to `.env` and change values for another environment. The CLI and API load `CREDIT_RISK_*` and `MLFLOW_*` settings from `.env` or the process environment; command-line flags still take precedence for training output, data, and monitoring input paths. Do not commit secrets to `.env`.
+CLI commands emit timestamped lifecycle logs to stderr. Set `CREDIT_RISK_LOG_LEVEL=DEBUG`, `INFO` (the default), `WARNING`, or `ERROR` to control verbosity.
 
 Open the browser dashboard at [http://127.0.0.1:8000/app](http://127.0.0.1:8000/app). It provides a responsive application form, API status indicator, sample-data shortcut, risk probability meter, model run ID, and threshold-aware action band. Interactive API documentation is available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
 
