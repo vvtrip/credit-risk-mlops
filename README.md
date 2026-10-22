@@ -44,7 +44,7 @@ Open the browser dashboard at [http://127.0.0.1:8000/app](http://127.0.0.1:8000/
 Training also writes an MLflow SQLite tracking store to `mlflow.db`. Open the experiment portal in a second terminal:
 
 ```powershell
-mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000
+mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000 --workers 1
 ```
 
 Then open [http://127.0.0.1:5000](http://127.0.0.1:5000). The `credit-risk-training` experiment shows the parent training run, nested baseline/bagging/boosting/stacking runs, parameters, CV/test metrics, thresholds, model artifacts, dataset metadata, and the selected winner. The registered model `credit-risk-production` uses the `champion` alias for the latest successful winner. This is a local tracking portal for teaching, not a hosted production registry.
