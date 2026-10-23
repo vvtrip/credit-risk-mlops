@@ -16,7 +16,22 @@ It is deliberately **classical machine learning only**: no neural networks or de
 - Data/model/feature drift monitoring
 - Docker, CI, tests, experiment tracking, and configuration
 
-## Quick start
+## Choose a setup
+
+Choose **one** of the workflows below:
+
+- **Docker Compose**: recommended for students who want the same runtime and
+  dependencies as the containerized application. Start with [the Docker
+  workflow](#run-and-validate-the-complete-local-stack-with-docker-compose).
+- **Local Python**: useful when learning or modifying the Python source
+  interactively. Continue with the local setup below.
+
+Do not run both workflows at the same time on the same ports. Both workflows
+use port `8000` for the API and port `5000` for MLflow by default.
+
+## Local Python setup
+
+Use this workflow only if Python 3.10 or newer is installed.
 
 ```powershell
 python -m venv .venv
@@ -26,6 +41,14 @@ python -m credit_risk train
 python -m credit_risk predict --input examples/request.json
 python -m credit_risk monitor --input examples/monitor.csv
 python -m uvicorn credit_risk.api:app --reload
+```
+
+On macOS/Linux/Git Bash, activate the virtual environment with:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
 ```
 
 The first training run downloads the dataset into `data/raw/`. Data and generated models are ignored by git.
@@ -72,6 +95,10 @@ The other user needs:
 On Windows, start Docker Desktop before running the commands. WSL2 is the
 recommended Docker Desktop backend. Docker Desktop also provides the Docker
 CLI and Compose plugin.
+
+If `docker` is not recognized, install Docker Desktop, start it, and reopen
+the terminal. If `docker compose config` reports `no configuration file
+provided`, change into the cloned repository directory before running it.
 
 #### One-time setup and image build
 
@@ -130,6 +157,11 @@ test -f artifacts/production.json && echo "production artifact found"
 test -f data/reference.csv && echo "reference data found"
 ```
 
+Training is complete when the command exits successfully and both checks
+report that the files exist. If training fails, read the error at the end of
+the trainer output before starting the API; the API requires
+`artifacts/production.json`.
+
 #### Start and validate the services
 
 Start the API and MLflow services:
@@ -137,6 +169,15 @@ Start the API and MLflow services:
 ```text
 docker compose up -d api mlflow
 docker compose ps
+```
+
+The `api` and `mlflow` services should show a running status. If the API
+restarts or prediction returns a missing-model error, run the training step
+again and then restart the API:
+
+```text
+docker compose --profile training run --rm trainer
+docker compose restart api
 ```
 
 Validate the API health endpoint from any terminal:
@@ -174,7 +215,9 @@ curl -X POST http://127.0.0.1:8000/predict \
 The prediction request is served by the containerized API; the sample JSON is
 read from the cloned repository on the host.
 
-Open the browser interfaces:
+After `docker compose up -d api mlflow` completes, open these local browser
+interfaces. The links are clickable in the README, but they work only while
+the corresponding containers are running:
 
 - [Credit Risk Studio](http://127.0.0.1:8000/app)
 - [FastAPI docs](http://127.0.0.1:8000/docs)
@@ -194,6 +237,9 @@ tracking data:
 ```text
 docker compose down
 ```
+
+You can run `docker compose up -d api mlflow` again later without retraining;
+the generated artifacts and MLflow data remain in the repository directories.
 
 The `trainer` profile downloads the dataset and writes model artifacts to the host `artifacts/` directory. The API mounts those artifacts read-only, while MLflow and the trainer share `mlflow.db` and `mlruns/`. To retrain with the same stack, run the trainer command again; it creates a new MLflow run and registered model version, then restart only the API if you want to force a fresh container:
 
@@ -286,7 +332,10 @@ In a larger production system, these local files would typically be replaced or 
 
 The German Credit dataset is small, old, and contains encoded categorical values. Its labels and demographic variables should not be used for real lending decisions. The project intentionally keeps the original variables visible for teaching, but reports slice metrics and calls out that fairness requires domain, legal, and societal review beyond a metric.
 
-## Useful commands
+## Useful local-development commands
+
+These commands use the local Python environment, not Docker. For the
+containerized workflow, use the Docker commands above.
 
 ```powershell
 python -m credit_risk train --config configs/default.yaml
