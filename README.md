@@ -29,6 +29,7 @@ python -m uvicorn credit_risk.api:app --reload
 ```
 
 The first training run downloads the dataset into `data/raw/`. Data and generated models are ignored by git.
+The API accepts one application object per `/predict` request. The CLI accepts either one JSON object or a list of objects for batch prediction.
 Run training before monitoring so that `data/reference.csv` exists:
 
 ```powershell

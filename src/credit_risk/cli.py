@@ -28,7 +28,11 @@ def main() -> None:
     if args.command == "train":
         print(train(load_settings(args.config), args.output_dir, args.data_dir, runtime))
     elif args.command == "predict":
-        result = predict_records(json.loads(args.input.read_text(encoding="utf-8")), args.output_dir)
+        payload = json.loads(args.input.read_text(encoding="utf-8"))
+        records = [payload] if isinstance(payload, dict) else payload
+        if not isinstance(records, list) or not all(isinstance(record, dict) for record in records):
+            raise ValueError("Prediction input must be a JSON object or a list of JSON objects.")
+        result = predict_records(records, args.output_dir)
         text = json.dumps(result, indent=2)
         if args.output:
             args.output.write_text(text + "\n", encoding="utf-8")

@@ -1,11 +1,9 @@
-[
-  {
-    "checking_status": "A11", "duration_months": 6, "credit_history": "A34",
-    "purpose": "A43", "credit_amount": 1169, "savings_status": "A65",
-    "employment_since": "A75", "installment_rate": 4, "personal_status_sex": "A93",
-    "other_debtors": "A101", "residence_since": 4, "property": "A121",
-    "age": 67, "other_installment_plans": "A143", "housing": "A152",
-    "existing_credits": 2, "job": "A173", "dependents": 1, "telephone": "A192",
-    "foreign_worker": "A201"
-  }
-]
+{
+  "checking_status": "A11", "duration_months": 6, "credit_history": "A34",
+  "purpose": "A43", "credit_amount": 1169, "savings_status": "A65",
+  "employment_since": "A75", "installment_rate": 4, "personal_status_sex": "A93",
+  "other_debtors": "A101", "residence_since": 4, "property": "A121",
+  "age": 67, "other_installment_plans": "A143", "housing": "A152",
+  "existing_credits": 2, "job": "A173", "dependents": 1, "telephone": "A192",
+  "foreign_worker": "A201"
+}
