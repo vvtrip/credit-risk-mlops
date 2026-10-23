@@ -17,6 +17,13 @@ def test_drift_report_covers_categorical_columns():
     assert result["housing"]["metric"] == "js_divergence"
 
 
+def test_drift_report_uses_configured_categorical_threshold():
+    reference = pd.DataFrame({"housing": ["own", "own", "rent"]})
+    current = pd.DataFrame({"housing": ["free", "free", "free"]})
+    result = drift_report(reference, current, js_threshold=10.0)
+    assert not result["housing"]["drifted"]
+
+
 def test_monitor_cli_reports_missing_files_clearly():
     from credit_risk.cli import main
 

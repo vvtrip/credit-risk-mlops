@@ -22,6 +22,7 @@ def main() -> None:
     prediction.add_argument("--output", type=Path)
     prediction.add_argument("--output-dir", type=Path, default=runtime.artifact_dir)
     monitoring = subparsers.add_parser("monitor")
+    monitoring.add_argument("--config", type=Path)
     monitoring.add_argument("--reference", type=Path, default=runtime.reference_path)
     monitoring.add_argument("--input", type=Path, required=True)
     args = parser.parse_args()
@@ -49,7 +50,13 @@ def main() -> None:
             )
         reference = pd.read_csv(args.reference)
         current = pd.read_csv(args.input)
-        report = drift_report(reference, current)
+        settings = load_settings(args.config)
+        report = drift_report(
+            reference,
+            current,
+            psi_threshold=settings.drift_psi_threshold,
+            js_threshold=settings.drift_js_threshold,
+        )
         if not report:
             raise ValueError(
                 "No columns overlap between the reference and current monitoring files."

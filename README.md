@@ -2,6 +2,10 @@
 
 This repository is a pedagogical, production-shaped credit-risk project. It predicts whether an applicant is a **good** or **bad** credit risk using the public [UCI Statlog German Credit dataset](https://archive.ics.uci.edu/dataset/144/statlog+german+credit+data).
 
+For a student-oriented explanation of every file, the end-to-end data flow,
+MLflow tracking, Docker services, generated artifacts, and suggested exercises,
+see the [Project Guide](./PROJECT_GUIDE.md).
+
 It is deliberately **classical machine learning only**: no neural networks or deep learning. The project demonstrates:
 
 - Reproducible data acquisition, validation, and feature engineering
@@ -39,7 +43,7 @@ python -m venv .venv
 python -m pip install -e ".[dev]"
 python -m credit_risk train
 python -m credit_risk predict --input examples/request.json
-python -m credit_risk monitor --input examples/monitor.csv
+python -m credit_risk monitor --config configs/default.yaml --input examples/monitor.csv
 python -m uvicorn credit_risk.api:app --reload
 ```
 
@@ -57,7 +61,7 @@ Run training before monitoring so that `data/reference.csv` exists:
 
 ```powershell
 python -m credit_risk train --config configs/default.yaml
-python -m credit_risk monitor --input examples/monitor.csv
+python -m credit_risk monitor --config configs/default.yaml --input examples/monitor.csv
 ```
 
 Runtime defaults are centralized in [config.py](./src/credit_risk/config.py). Copy `.env.example` to `.env` and change values for another environment. The CLI and API load `CREDIT_RISK_*` and `MLFLOW_*` settings from `.env` or the process environment; command-line flags still take precedence for training output, data, and monitoring input paths. Do not commit secrets to `.env`.

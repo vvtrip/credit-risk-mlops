@@ -18,7 +18,12 @@ def population_stability_index(reference: pd.Series, current: pd.Series, bins: i
     return float(np.sum((current_counts - reference_counts) * np.log(current_counts / reference_counts)))
 
 
-def drift_report(reference: pd.DataFrame, current: pd.DataFrame, psi_threshold: float = 0.2) -> dict[str, Any]:
+def drift_report(
+    reference: pd.DataFrame,
+    current: pd.DataFrame,
+    psi_threshold: float = 0.2,
+    js_threshold: float = 0.1,
+) -> dict[str, Any]:
     logger.info(
         "Starting drift report: reference_rows=%d current_rows=%d",
         len(reference),
@@ -37,7 +42,11 @@ def drift_report(reference: pd.DataFrame, current: pd.DataFrame, psi_threshold: 
             q = cur.reindex(categories, fill_value=0).to_numpy() + 1e-6
             midpoint = (p + q) / 2
             js = float(0.5 * np.sum(p * np.log(p / midpoint)) + 0.5 * np.sum(q * np.log(q / midpoint)))
-            report[column] = {"metric": "js_divergence", "value": js, "drifted": js >= 0.1}
+            report[column] = {
+                "metric": "js_divergence",
+                "value": js,
+                "drifted": js >= js_threshold,
+            }
     logger.info("Completed drift report: columns=%d drifted=%d", len(report), sum(
         item["drifted"] for item in report.values()
     ))
