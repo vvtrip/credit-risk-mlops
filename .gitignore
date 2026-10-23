@@ -11,3 +11,4 @@ mlflow.db
 *.egg-info/
 .coverage
 .env
+*.csv
