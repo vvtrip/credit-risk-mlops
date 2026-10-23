@@ -37,7 +37,7 @@ python -m credit_risk train --config configs/default.yaml
 python -m credit_risk monitor --input examples/monitor.csv
 ```
 
-Runtime defaults are centralized in [config.py](C:/Users/Vaibhav/Downloads/credit-risk-mlops/src/credit_risk/config.py). Copy `.env.example` to `.env` and change values for another environment. The CLI and API load `CREDIT_RISK_*` and `MLFLOW_*` settings from `.env` or the process environment; command-line flags still take precedence for training output, data, and monitoring input paths. Do not commit secrets to `.env`.
+Runtime defaults are centralized in [config.py](./src/credit_risk/config.py). Copy `.env.example` to `.env` and change values for another environment. The CLI and API load `CREDIT_RISK_*` and `MLFLOW_*` settings from `.env` or the process environment; command-line flags still take precedence for training output, data, and monitoring input paths. Do not commit secrets to `.env`.
 CLI commands emit timestamped lifecycle logs to stderr. Set `CREDIT_RISK_LOG_LEVEL=DEBUG`, `INFO` (the default), `WARNING`, or `ERROR` to control verbosity.
 
 Open the browser dashboard at [http://127.0.0.1:8000/app](http://127.0.0.1:8000/app). It provides a responsive application form, API status indicator, sample-data shortcut, risk probability meter, model run ID, and threshold-aware action band. Interactive API documentation is available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
@@ -50,22 +50,157 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000 --workers 1
 
 Then open [http://127.0.0.1:5000](http://127.0.0.1:5000). The `credit-risk-training` experiment shows the parent training run, nested baseline/bagging/boosting/stacking runs, parameters, CV/test metrics, thresholds, model artifacts, dataset metadata, and the selected winner. The registered model `credit-risk-production` uses the `champion` alias for the latest successful winner. This is a local tracking portal for teaching, not a hosted production registry.
 
-### Run the complete local stack with Docker Compose
+### Run and validate the complete local stack with Docker Compose
 
-After installing Docker Desktop, train and start the API/UI plus MLflow portal with:
+Docker packages the API, training command, and MLflow server with the Python
+runtime and project dependencies. Use it when you want a reproducible
+environment that does not depend on your host Python installation, virtual
+environment, or package search path. It is also the closest local validation
+of how the application will run in a containerized deployment.
 
-```powershell
-docker compose --profile training run --rm trainer
-docker compose up --build -d api mlflow
+#### Prerequisites
+
+The other user needs:
+
+1. [Docker Desktop](https://www.docker.com/products/docker-desktop/) on
+   Windows or macOS, or Docker Engine plus the Compose plugin on Linux.
+2. Git, to clone the repository.
+3. A terminal. PowerShell, Windows Command Prompt, Git Bash, macOS Terminal,
+   and Linux shells all work. Python, pip, and MLflow do **not** need to be
+   installed on the host for the Docker workflow.
+
+On Windows, start Docker Desktop before running the commands. WSL2 is the
+recommended Docker Desktop backend. Docker Desktop also provides the Docker
+CLI and Compose plugin.
+
+#### One-time setup and image build
+
+Clone the repository and run the commands from its root:
+
+```text
+git clone https://github.com/vvtrip/credit-risk-mlops.git
+cd credit-risk-mlops
+docker info
+docker compose config
 ```
 
-Open:
+`docker info` confirms that Docker Desktop is running. `docker compose config`
+checks that Compose can resolve [compose.yaml](./compose.yaml). Build the
+application image:
+
+```text
+docker compose build
+```
+
+The commands above work in macOS/Linux terminals and Git Bash. In PowerShell
+or Windows Command Prompt, use the same Docker commands; only the directory
+syntax differs if you need to change directories:
+
+```powershell
+cd .\credit-risk-mlops
+```
+
+#### Train the models in Docker
+
+Run the one-shot training container:
+
+```text
+docker compose --profile training run --rm trainer
+```
+
+The `trainer` service downloads or reuses the dataset, trains the models, and
+writes the generated files to the host-mounted `artifacts/`, `data/`,
+`mlflow.db`, and `mlruns/` paths. Its logs are printed directly in the
+terminal. The `--rm` option removes the temporary trainer container after it
+finishes.
+
+Verify that training produced the serving registry and reference data:
+
+PowerShell:
+
+```powershell
+Test-Path artifacts\production.json
+Test-Path data\reference.csv
+```
+
+macOS/Linux/Git Bash:
+
+```bash
+test -f artifacts/production.json && echo "production artifact found"
+test -f data/reference.csv && echo "reference data found"
+```
+
+#### Start and validate the services
+
+Start the API and MLflow services:
+
+```text
+docker compose up -d api mlflow
+docker compose ps
+```
+
+Validate the API health endpoint from any terminal:
+
+```text
+curl http://127.0.0.1:8000/health
+```
+
+Expected response:
+
+```json
+{"status":"ok"}
+```
+
+Test a prediction in PowerShell:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/health
+$body = Get-Content examples\request.json -Raw
+Invoke-RestMethod `
+  -Uri http://127.0.0.1:8000/predict `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+Test a prediction in macOS/Linux/Git Bash:
+
+```bash
+curl -X POST http://127.0.0.1:8000/predict \
+  -H "Content-Type: application/json" \
+  --data @examples/request.json
+```
+
+The prediction request is served by the containerized API; the sample JSON is
+read from the cloned repository on the host.
+
+Open the browser interfaces:
 
 - [Credit Risk Studio](http://127.0.0.1:8000/app)
 - [FastAPI docs](http://127.0.0.1:8000/docs)
 - [MLflow portal](http://127.0.0.1:5000)
 
+Inspect service logs when troubleshooting:
+
+```text
+docker compose logs -f api
+docker compose logs -f mlflow
+```
+
+The MLflow service is configured with one worker for reliable operation on
+Windows. To stop the stack while preserving host-mounted artifacts and
+tracking data:
+
+```text
+docker compose down
+```
+
 The `trainer` profile downloads the dataset and writes model artifacts to the host `artifacts/` directory. The API mounts those artifacts read-only, while MLflow and the trainer share `mlflow.db` and `mlruns/`. To retrain with the same stack, run the trainer command again; it creates a new MLflow run and registered model version, then restart only the API if you want to force a fresh container:
+
+```text
+docker compose --profile training run --rm trainer
+docker compose restart api
+```
 
 Compose ports can be changed without editing YAML:
 
