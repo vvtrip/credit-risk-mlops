@@ -377,7 +377,3 @@ python -m credit_risk predict --input data/new_applications.csv --output data/pr
 python -m pytest -q
 python -m ruff check .
 ```
-
-## Next extensions
-
-For a real deployment, add a feature store, managed artifact storage, authenticated service-to-service calls, secrets management, a scheduled monitor, label-based model-quality monitoring, a human review queue, immutable audit logs, and a formal validation process.
