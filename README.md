@@ -69,7 +69,8 @@ CLI commands emit timestamped lifecycle logs to stderr. Set `CREDIT_RISK_LOG_LEV
 
 Open the browser dashboard at [http://127.0.0.1:8000/app](http://127.0.0.1:8000/app). It provides a responsive application form, API status indicator, sample-data shortcut, risk probability meter, model run ID, and threshold-aware action band. Interactive API documentation is available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
 
-Training also writes an MLflow SQLite tracking store to `mlflow.db`. Open the experiment portal in a second terminal:
+Training also writes an MLflow SQLite tracking store to `mlflow.db` when you
+run the local Python workflow. Open the experiment portal in a second terminal:
 
 ```powershell
 mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000 --workers 1
@@ -141,9 +142,13 @@ docker compose --profile training run --rm trainer
 
 The `trainer` service downloads or reuses the dataset, trains the models, and
 writes the generated files to the host-mounted `artifacts/`, `data/`,
-`mlflow.db`, and `mlruns/` paths. Its logs are printed directly in the
+`mlflow/`, and `mlruns/` paths. Its logs are printed directly in the
 terminal. The `--rm` option removes the temporary trainer container after it
 finishes.
+
+Compose stores its SQLite tracking database at `mlflow/mlflow.db`. The
+directory mount is intentional: it works on fresh macOS, Windows, and Linux
+checkouts even when no database file exists yet.
 
 Verify that training produced the serving registry and reference data:
 
@@ -245,7 +250,7 @@ docker compose down
 You can run `docker compose up -d api mlflow` again later without retraining;
 the generated artifacts and MLflow data remain in the repository directories.
 
-The `trainer` profile downloads the dataset and writes model artifacts to the host `artifacts/` directory. The API mounts those artifacts read-only, while MLflow and the trainer share `mlflow.db` and `mlruns/`. To retrain with the same stack, run the trainer command again; it creates a new MLflow run and registered model version, then restart only the API if you want to force a fresh container:
+The `trainer` profile downloads the dataset and writes model artifacts to the host `artifacts/` directory. The API mounts those artifacts read-only, while MLflow and the trainer share `mlflow/` and `mlruns/`. To retrain with the same stack, run the trainer command again; it creates a new MLflow run and registered model version, then restart only the API if you want to force a fresh container:
 
 ```text
 docker compose --profile training run --rm trainer

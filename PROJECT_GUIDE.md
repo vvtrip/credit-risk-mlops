@@ -171,7 +171,8 @@ credit-risk-mlops/
 |   |-- monitor.csv              Example current population for drift checks
 |   `-- request.json             One valid API prediction request
 |-- artifacts/                   Versioned local model outputs
-|-- mlflow.db                    MLflow SQLite tracking database
+|-- mlflow/                      Compose MLflow SQLite database directory
+|-- mlflow.db                    Local Python MLflow SQLite database
 |-- mlruns/                      MLflow local artifact store
 |-- credit_risk/                 Root import bridge for an uninstalled checkout
 |-- src/credit_risk/             Main Python package
@@ -181,7 +182,7 @@ credit-risk-mlops/
 `-- PROJECT_GUIDE.md             This student-oriented guide
 ```
 
-The `artifacts/`, `mlruns/`, and `mlflow.db` directories are runtime outputs.
+The `artifacts/`, `mlruns/`, `mlflow/`, and `mlflow.db` paths are runtime outputs.
 They can become large and are not source code. The `src/credit_risk/` package
 is the source of truth for application behavior.
 
@@ -620,7 +621,7 @@ The default local tracking store is SQLite:
 sqlite:///mlflow.db
 ```
 
-The database stores MLflow metadata such as experiments, runs, parameters,
+For Compose, the database at `mlflow/mlflow.db` stores MLflow metadata such as experiments, runs, parameters,
 metrics, tags, and model-version information. The `mlruns/` directory stores
 local run artifacts.
 
