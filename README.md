@@ -180,6 +180,30 @@ docker compose up -d api mlflow
 docker compose ps
 ```
 
+If Compose reports `port 5000 is already in use`, another process or
+container is already using the MLflow host port. Stop a separately running
+MLflow UI with `Ctrl+C`, or choose another host port for this Compose session:
+
+```bash
+docker compose down --remove-orphans
+MLFLOW_PORT=5001 docker compose up -d api mlflow
+```
+
+The MLflow service still listens on port `5000` inside Docker; only the Mac
+host port changes. Open the portal at
+[http://127.0.0.1:5001](http://127.0.0.1:5001). On PowerShell, use:
+
+```powershell
+$env:MLFLOW_PORT = "5001"
+docker compose up -d api mlflow
+```
+
+To identify the process using port `5000` on macOS/Linux:
+
+```bash
+lsof -nP -iTCP:5000 -sTCP:LISTEN
+```
+
 The `api` and `mlflow` services should show a running status. If the API
 restarts or prediction returns a missing-model error, run the training step
 again and then restart the API:
